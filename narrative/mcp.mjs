@@ -1,5 +1,6 @@
 /** Minimal tools-only MCP stdio transport. No network, model calls or logging. */
-export const serverInfo = Object.freeze({ name: 'rea-narrative', version: '0.1.1' });
+import pkg from '../package.json' with { type: 'json' };
+export const serverInfo = Object.freeze({ name: pkg.name, version: pkg.version });
 const versions = new Set(['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25']);
 const maxLineBytes = 16 * 1024 * 1024;
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);

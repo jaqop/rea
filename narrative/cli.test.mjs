@@ -1,10 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 const cli = resolve('narrative/cli.mjs');
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8', timeout: 15000 });
+
+test('CLI finalizes a new output while preserving input and refusing overwrite', async () => {
+  const root = await mkdtemp(join(process.cwd(), '.rea-test-'));
+  try {
+    const input = join(root, 'draft.md');
+    const output = join(root, 'final.md');
+    const original = 'نص\u200b جديد.\n\n> اقتباس\u200b محفوظ\n';
+    await writeFile(input, original);
+    const result = run('finalize', input, '--output', output);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).report.removed_count, 1);
+    assert.equal(await readFile(output, 'utf8'), original.replace('نص\u200b', 'نص'));
+    assert.equal(await readFile(input, 'utf8'), original);
+    assert.notEqual(run('finalize', input, '--output', output).status, 0);
+    assert.notEqual(run('finalize', input, '--output', input).status, 0);
+    assert.notEqual(run('mcp', '--output', output).status, 0);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 test('CLI import, reopen, config and errors work from another directory', async () => {
   const root = await mkdtemp(join(process.cwd(), '.rea-test-'));
