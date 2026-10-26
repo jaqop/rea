@@ -10,13 +10,13 @@ const root = dirname(fileURLToPath(import.meta.url));
 const help = `REA Narrative — reverse engineering books with source-bound evidence
 
 Usage:
-  rea import <book.txt|book.md> [--title <title>] [--home <directory>]
-  rea tools
-  rea call <tool> --input <arguments.json> [--home <directory>]
-  rea call <tool> '<JSON arguments>' [--home <directory>]
-  rea config [--home <directory>]
-  rea mcp [--home <directory>]
-  rea workflow
+  rea-narrative import <book.txt|book.md> [--title <title>] [--home <directory>]
+  rea-narrative tools
+  rea-narrative call <tool> --input <arguments.json> [--home <directory>]
+  rea-narrative call <tool> '<JSON arguments>' [--home <directory>]
+  rea-narrative config [--home <directory>]
+  rea-narrative mcp [--home <directory>]
+  rea-narrative workflow
 
 Node.js 24 or later. No dependencies or API keys required by this runtime.
 An MCP-connected assistant performs interpretation and optional original writing.
@@ -59,7 +59,7 @@ async function main() {
     if (!rest[0] || rest.length > 2 || (options['--input'] && rest[1]) || options['--title']) throw new Error('call requires a tool name and one JSON argument or --input file.');
     const text = options['--input'] ? await readBounded(options['--input']) : rest[1] ?? '{}';
     emit(await api.call(rest[0], JSON.parse(text)));
-  } else throw new Error(`Unknown command: ${command}. Run rea --help.`);
+  } else throw new Error(`Unknown command: ${command}. Run rea-narrative --help.`);
 }
 
 process.stdout.on('error', error => { if (error.code === 'EPIPE') process.exit(0); throw error; });

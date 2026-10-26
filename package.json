@@ -1,6 +1,6 @@
 {
   "name": "rea-narrative",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Evidence-centered reverse engineering of books and novels with local CLI and MCP tools.",
   "license": "MIT",
   "type": "module",
@@ -16,7 +16,6 @@
     "node": ">=24"
   },
   "bin": {
-    "rea": "narrative/cli.mjs",
     "rea-narrative": "narrative/cli.mjs"
   },
   "files": [

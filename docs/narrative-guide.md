@@ -11,24 +11,24 @@ REA يحفظ تحقيقًا قابلًا للمراجعة في بناء رواي
 الأمثلة التالية تفترض أن الأمر `rea` متاح بعد تثبيت الحزمة، وأنك تستبدل المسارات بمسارات مطلقة على جهازك:
 
 ```powershell
-rea import "D:/Books/source.txt" --title "عنوان الرواية" --home "D:/Private/narrative"
-rea tools
-rea config --home "D:/Private/narrative"
-rea workflow
+rea-narrative import "D:/Books/source.txt" --title "عنوان الرواية" --home "D:/Private/narrative"
+rea-narrative tools
+rea-narrative config --home "D:/Private/narrative"
+rea-narrative workflow
 ```
 
-يعيد الاستيراد `book_id`. احتفظ بالقيمة الفعلية بدلًا من كتابة معرّف تخميني. يعرض `rea tools` أسماء الأدوات ومخططات حقولها. يطبع `rea workflow` تعليمات سير العمل للمساعد، ويطبع `rea config` إعداد MCP بأمر تشغيل مطلق؛ أضف هذا الإعداد إلى عميلك وفق طريقة إعداد العميل. نقل التثبيت إلى مسار آخر يستلزم توليد الإعداد مجددًا.
+يعيد الاستيراد `book_id`. احتفظ بالقيمة الفعلية بدلًا من كتابة معرّف تخميني. يعرض `rea-narrative tools` أسماء الأدوات ومخططات حقولها. يطبع `rea-narrative workflow` تعليمات سير العمل للمساعد، ويطبع `rea-narrative config` إعداد MCP بأمر تشغيل مطلق؛ أضف هذا الإعداد إلى عميلك وفق طريقة إعداد العميل. نقل التثبيت إلى مسار آخر يستلزم توليد الإعداد مجددًا.
 
 لتشغيل خادم MCP يدويًا:
 
 ```powershell
-rea mcp --home "D:/Private/narrative"
+rea-narrative mcp --home "D:/Private/narrative"
 ```
 
 هذا خادم stdio: يتبادل رسائل البروتوكول عبر الإدخال والإخراج القياسيين. ليس صفحة ويب ولا محادثة تكتب فيها سؤالًا مباشرة. الأدوات نفسها متاحة عبر CLI:
 
 ```powershell
-rea call inspect_book --input "D:/Private/inspect.json" --home "D:/Private/narrative"
+rea-narrative call inspect_book --input "D:/Private/inspect.json" --home "D:/Private/narrative"
 ```
 
 محتوى `inspect.json`، مع استبدال المعرّف:
@@ -37,7 +37,7 @@ rea call inspect_book --input "D:/Private/inspect.json" --home "D:/Private/narra
 {"book_id":"book_REPLACE_WITH_ACTUAL_64_HEX_DIGEST"}
 ```
 
-يمكن أيضًا تمرير كائن JSON بوصفه الوسيط الأخير للأمر `rea call`. ملف JSON هو الخيار الأوضح عند التعامل مع اقتباسات عربية أو نص متعدد الأسطر؛ قواعد اقتباس سطر الأوامر تختلف بين الأنظمة.
+يمكن أيضًا تمرير كائن JSON بوصفه الوسيط الأخير للأمر `rea-narrative call`. ملف JSON هو الخيار الأوضح عند التعامل مع اقتباسات عربية أو نص متعدد الأسطر؛ قواعد اقتباس سطر الأوامر تختلف بين الأنظمة.
 
 ## المصدر والخصوصية والحدود
 
@@ -125,7 +125,7 @@ rea call inspect_book --input "D:/Private/inspect.json" --home "D:/Private/narra
 2. نفّذ `export_investigation` واحفظ **كائن النتيجة نفسه** كملف JSON UTF-8 خاص. لا تحفظ غلاف رد MCP أو نص المحادثة بدل الكائن. التصدير يتضمن النص الكامل والمقاطع والاستشهادات والسجل؛ لا ترفعه إلى GitHub مع الشفرة.
 3. انسخ البرنامج إلى الجهاز الثاني باستنساخ مستودعك من GitHub أو تثبيت الحزمة، وتأكد من Node.js 24 أو أحدث.
 4. انقل ملف التحقيق الخاص منفصلًا، ثم استخدم `import_investigation` مع `path` ومجلد `--home` جديد. يرفض الاستيراد استبدال تحقيق بالهوية نفسها؛ لا يمزج تحقيقين متفرعين.
-5. افحص `inspect_book` و`verify_investigation` وولّد `rea config --home ...` مجددًا لعميل الجهاز الثاني.
+5. افحص `inspect_book` و`verify_investigation` وولّد `rea-narrative config --home ...` مجددًا لعميل الجهاز الثاني.
 
 إذا تعطل كاتب وترك مجلد قفل، افحص عدم وجود عملية كتابة قبل إزالة القفل الذي يذكره الخطأ. احتفظ بنسخة احتياطية خاصة؛ سجل التجزئة لا يحل محل النسخ الاحتياطي.
 
@@ -135,7 +135,7 @@ Narrative REA is a local Node.js 24+ evidence store with CLI and stdio MCP tools
 
 Citations use absolute, zero-based UTF-16 code-unit offsets into the decoded source, with an exclusive end. Copy exact source text, including whitespace; do not normalize it. Observation, inference and hypothesis are different claim kinds. Interpretations require alternatives and a proposed test. Scene boundaries, motivations and dependencies are analyst inferences. Mechanisms are hypotheses; graph reachability and citation integrity do not prove causality, author intent, reader response or literary quality.
 
-Use all tools through `rea call <tool> --input <file.json> --home <absolute-directory>`, or connect the config printed by `rea config --home <directory>`. `rea tools` is the authoritative input catalog. Tools are `import_book`, `inspect_book`, `list_passages`, `search_passages`, `read_passage`, `record_claim`, `record_scene`, `record_mechanism`, `record_unknown`, `resolve_unknown`, `trace_dependencies`, `verify_investigation`, `read_records`, `transfer_brief`, `export_investigation`, and `import_investigation`.
+Use all tools through `rea-narrative call <tool> --input <file.json> --home <absolute-directory>`, or connect the config printed by `rea-narrative config --home <directory>`. `rea-narrative tools` is the authoritative input catalog. Tools are `import_book`, `inspect_book`, `list_passages`, `search_passages`, `read_passage`, `record_claim`, `record_scene`, `record_mechanism`, `record_unknown`, `resolve_unknown`, `trace_dependencies`, `verify_investigation`, `read_records`, `transfer_brief`, `export_investigation`, and `import_investigation`.
 
 There is no built-in OCR, EPUB/PDF reader, BookNLP, reader experiment runner, reward system or autonomous novelist. The 16 MiB persisted-project limit includes source and records; source size alone understates storage. Mechanisms remain `tested: false`; there is no tool for recording a verified experiment outcome. Record external evaluation honestly in a separate report. Verification reports structural consistency and annotation coverage only.
 

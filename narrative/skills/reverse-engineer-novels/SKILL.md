@@ -18,15 +18,15 @@ description: Analyze a user-selected novel through Narrative REA with exact sour
 يتطلب التشغيل Node.js 24+. استخدم أدوات MCP المسماة أدناه، أو CLI المشترك:
 
 ```text
-rea import <absolute-source-path> --title <title> --home <absolute-private-directory>
-rea tools
-rea call <tool> --input <absolute-json-file> --home <absolute-private-directory>
-rea config --home <absolute-private-directory>
-rea mcp --home <absolute-private-directory>
-rea workflow
+rea-narrative import <absolute-source-path> --title <title> --home <absolute-private-directory>
+rea-narrative tools
+rea-narrative call <tool> --input <absolute-json-file> --home <absolute-private-directory>
+rea-narrative config --home <absolute-private-directory>
+rea-narrative mcp --home <absolute-private-directory>
+rea-narrative workflow
 ```
 
-يمكن تمرير JSON بوصفه الوسيط الأخير لـ `rea call` أيضًا. استخدم ملفات JSON عند تعقيد الاقتباس. اطلب مخطط الأداة من `rea tools` أو MCP؛ لا تخترع أسماء أدوات أو حقولًا. `rea config` يطبع إعداد تشغيل مطلقًا؛ أعِد توليده بعد تغيير الجهاز أو المسار. هذه الحزمة ليست REA البرمجية القديمة: لا تستخدم أدوات binary/native/web لتفسير رواية.
+يمكن تمرير JSON بوصفه الوسيط الأخير لـ `rea-narrative call` أيضًا. استخدم ملفات JSON عند تعقيد الاقتباس. اطلب مخطط الأداة من `rea-narrative tools` أو MCP؛ لا تخترع أسماء أدوات أو حقولًا. `rea-narrative config` يطبع إعداد تشغيل مطلقًا؛ أعِد توليده بعد تغيير الجهاز أو المسار. هذه الحزمة ليست REA البرمجية القديمة: لا تستخدم أدوات binary/native/web لتفسير رواية.
 
 `import_book` يقبل `path` و`title` اختياريًا لملف UTF-8 محلي بصيغة `.txt` أو `.md` أو `.markdown`. لا توجد قراءة EPUB/PDF أو OCR أو BookNLP مدمجة. التحويل الخارجي يحتاج مراجعة النص. المصدر غير مرفق بالمشروع. حد الملف وحد التحقيق المحفوظ 16 MiB لكل منهما؛ التحقيق يكرر النص في المقاطع ويضيف السجلات، لذلك الحجم المقبول فعليًا للمصدر أقل. اقترح تقسيم المصدر مسبقًا إذا لزم، وصرّح بأن التحقيقات لا ترتبط آليًا عبر الكتب.
 

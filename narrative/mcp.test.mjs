@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
 import { startMcp } from './mcp.mjs';
+import pkg from '../package.json' with { type: 'json' };
 
 const descriptor = { name: 'echo', description: 'Echo input', inputSchema: { type: 'object' }, annotations: { readOnlyHint: true } };
 const request = (id, method, params) => ({ jsonrpc: '2.0', id, method, ...(params === undefined ? {} : { params }) });
@@ -24,7 +25,7 @@ test('initialization gates tools and preserves notifications without responses',
   assert.equal(responses.length, 4);
   assert.equal(responses[0].error.code, -32002);
   assert.equal(responses[1].result.serverInfo.name, 'rea-narrative');
-  assert.equal(responses[1].result.serverInfo.version, '0.1.0');
+  assert.equal(responses[1].result.serverInfo.version, pkg.version);
   assert.equal(responses[2].error.code, -32002);
   assert.deepEqual(responses[3].result.tools, [descriptor]);
 });

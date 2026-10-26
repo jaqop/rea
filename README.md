@@ -4,6 +4,8 @@
 
 هذه النسخة تعمل للكتب. نقطة التشغيل وحزمة التثبيت والاختبارات مخصصة للمسار السردي. المصدر البرمجي الأصلي محفوظ للرجوع إليه، ولا يُحمّل أو يُوزّع مع الحزمة الجديدة.
 
+اسم الأمر هو `rea-narrative` لتجنب التعارض مع الأمر `rea` الذي تستخدمه حزمة تحليل البرامج الأصلية. يمكن تثبيت النسختين معًا دون حذف إحداهما أو استخدام `--force`.
+
 ## التثبيت على أي جهاز
 
 تحتاج إلى Git وNode.js 24 أو أحدث. لا توجد تبعيات npm أو خطوات بناء أو محركات تفكيك برامج مطلوبة.
@@ -14,7 +16,7 @@
     npm test
     node narrative/cli.mjs --help
     npm install --global .
-    rea --help
+    rea-narrative --help
 
 أو التثبيت مباشرة من GitHub:
 
@@ -24,21 +26,21 @@
 
 ## ربطه بمساعدك
 
-    rea config --home "/absolute/path/to/my-investigations"
+    rea-narrative config --home "/absolute/path/to/my-investigations"
 
 على Windows استخدم مسارًا مثل D:/Books/investigations. يعطي الأمر إعداد MCP يتضمن المسارات المطلقة لهذا الجهاز. أضفه إلى إعدادات MCP في مساعدك ثم أعد الاتصال. لا يغيّر الأمر إعدادات التطبيقات تلقائيًا.
 
-    rea mcp --home "/absolute/path/to/my-investigations"
-    rea workflow
+    rea-narrative mcp --home "/absolute/path/to/my-investigations"
+    rea-narrative workflow
 
 اقرأ [مهارة التحقيق الروائي](narrative/skills/reverse-engineer-novels/SKILL.md)، أو اطبعها بالأمر الأخير وأعطها للمساعد. اطلب منه التحقيق في روايتك بالأدلة، مع فصل الملاحظة عن الاستنتاج، وتسجيل تفسيرات منافسة واختبارات للآليات المستخرجة.
 
 ## تجربة سريعة
 
     npm run demo
-    rea import "/absolute/path/to/book.txt" --title "عنوان الكتاب" --home "/absolute/path/to/my-investigations"
-    rea tools
-    rea call inspect_book --input arguments.json --home "/absolute/path/to/my-investigations"
+    rea-narrative import "/absolute/path/to/book.txt" --title "عنوان الكتاب" --home "/absolute/path/to/my-investigations"
+    rea-narrative tools
+    rea-narrative call inspect_book --input arguments.json --home "/absolute/path/to/my-investigations"
 
 يعيد الاستيراد book_id. ضع الهوية الفعلية في ملف arguments.json بهذا الشكل: { "book_id": "book_..." }. استخدم أدوات MCP بدل كتابة الأوامر عندما يكون المساعد متصلًا.
 
