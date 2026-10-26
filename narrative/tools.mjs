@@ -2,12 +2,20 @@ import { extname } from 'node:path';
 import { buildBook, getPassage, searchBook, buildClaim } from './core.mjs';
 import { ProjectStore, readBounded, addRecord, requireRecord } from './store.mjs';
 
-import { toolDefinitions, validateArguments } from './contracts.mjs';
-export { toolDefinitions, validateArguments } from './contracts.mjs';
+import { toolDefinitions as bookDefinitions, validateArguments } from './contracts.mjs';
+import { researchDefinitions, handleResearch } from './research.mjs';
+import { workspaceDefinitions } from './workspace-contracts.mjs';
+import { createWorkspaceTools } from './workspace.mjs';
+import { outputDefinitions, handleOutput } from './output-tools.mjs';
+export { validateArguments } from './contracts.mjs';
+export const toolDefinitions = [...bookDefinitions, ...researchDefinitions, ...workspaceDefinitions, ...outputDefinitions];
+const outputNames = new Set(outputDefinitions.map(item => item.name));
+const researchNames = new Set(researchDefinitions.map(item => item.name));
+const workspaceNames = new Set(workspaceDefinitions.map(item => item.name));
 
 function summary(project) {
   const { book } = project;
-  return { book_id: book.id, title: book.title, source_sha256: book.source_sha256, offset_unit: book.offset_unit, passage_count: book.passages.length, counts: Object.fromEntries(['claims', 'scenes', 'mechanisms', 'unknowns'].map(key => [key, project[key].length])), limitations: ['Paragraphs and headings are heuristic; they do not establish scene boundaries.', 'A connected assistant supplies interpretations; this runtime does not contain an LLM.', 'Exact citations establish source location, not interpretive truth.'] };
+  return { book_id: book.id, title: book.title, source_sha256: book.source_sha256, offset_unit: book.offset_unit, passage_count: book.passages.length, counts: Object.fromEntries(['claims', 'scenes', 'mechanisms', 'unknowns', 'analyses'].map(key => [key, (project[key] ?? []).length])), limitations: ['Paragraphs and headings are heuristic; they do not establish scene boundaries.', 'A connected assistant supplies interpretations; this runtime does not contain an LLM.', 'Exact citations establish source location, not interpretive truth.'] };
 }
 function page(items, { offset = 0, limit = 20 }) {
   return { items: items.slice(offset, offset + limit), total: items.length, next_offset: offset + limit < items.length ? offset + limit : null };
@@ -30,10 +38,14 @@ function graph(project, seed, direction) {
 
 export function createTools(home) {
   const store = new ProjectStore(home);
+  const workspaces = createWorkspaceTools(home, store);
   return { definitions: toolDefinitions, async call(name, args = {}) {
     const definition = toolDefinitions.find(tool => tool.name === name);
     if (!definition) throw new Error(`Unknown tool: ${name}`);
     validateArguments(args, definition.inputSchema);
+    if (outputNames.has(name)) return handleOutput(name, args);
+    if (researchNames.has(name)) return handleResearch(name, args, store);
+    if (workspaceNames.has(name)) return workspaces.call(name, args);
     if (name === 'import_book') {
       if (!['.txt', '.md', '.markdown'].includes(extname(args.path).toLowerCase())) throw new Error('Supported source formats: UTF-8 .txt, .md, .markdown. Convert other formats explicitly first.');
       const book = buildBook(await readBounded(args.path), args.title ?? 'Untitled');
@@ -68,7 +80,7 @@ export function createTools(home) {
     if (name === 'search_passages') return searchBook(project.book, input.query, input);
     if (name === 'read_passage') return getPassage(project.book, input.passage_id);
     if (name === 'list_passages') return page(project.book.passages, input);
-    if (name === 'read_records') return page(project[input.kind], input);
+    if (name === 'read_records') return page(project[input.kind] ?? [], input);
     if (name === 'trace_dependencies') return graph(project, input.id, input.direction ?? 'dependencies');
     if (name === 'export_investigation') return project;
     if (name === 'transfer_brief') return { schema: 'NarrativeTransfer/1', source_book_id: book_id, mechanisms: project.mechanisms.map(item => ({ id: item.id, constraints: item.transfer_constraints, prediction: item.prediction, proposed_test: item.test, tested: item.tested })), open_questions: project.unknowns.filter(item => item.status !== 'resolved').map(item => ({ id: item.id })), instructions: 'Use these analyst-authored constraints with a new premise, cast, world, scene order and original voice. Review for source-specific content; constraints are hypotheses, not proven writing laws.' };

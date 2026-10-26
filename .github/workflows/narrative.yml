@@ -18,8 +18,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -I -c "import ast,pathlib; ast.parse(pathlib.Path('narrative/adapters/output_bridge.py').read_text(encoding='utf-8'))"
       - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm run check
       - run: npm run demo
+      - run: npm run demo:multi
       - run: npm pack --dry-run

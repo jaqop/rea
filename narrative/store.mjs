@@ -1,8 +1,9 @@
-import { mkdir, open, rename, unlink, rmdir, stat } from 'node:fs/promises';
+import { mkdir, open, rename, unlink, rmdir, stat, readdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { digest, validateBook, buildClaim, getPassage } from './core.mjs';
+import { digest, validateBook, buildClaim, getPassage, validateCitation } from './core.mjs';
 import { toolDefinitions, validateArguments } from './contracts.mjs';
+import { validateAnalyses } from './research.mjs';
 
 export const MAX_FILE_BYTES = 16 * 1024 * 1024;
 export async function readBounded(path) {
@@ -23,7 +24,7 @@ export async function readBounded(path) {
 }
 
 export function projectState(project) {
-  return { schema: project.schema, book: project.book, claims: project.claims, scenes: project.scenes, mechanisms: project.mechanisms, unknowns: project.unknowns };
+  return { schema: project.schema, book: project.book, claims: project.claims, scenes: project.scenes, mechanisms: project.mechanisms, unknowns: project.unknowns, ...(project.analyses === undefined ? {} : { analyses: project.analyses }) };
 }
 
 export function validateProject(project) {
@@ -45,7 +46,8 @@ export function validateProject(project) {
     if (new Set(ids).size !== ids.length) throw new Error(`Duplicate ${key} identities.`);
     for (const id of ids) checkId(id);
   }
-  const allIds = [...project.claims, ...project.scenes, ...project.mechanisms, ...project.unknowns].map(item => item.id);
+  validateAnalyses(project);
+  const allIds = [...project.claims, ...project.scenes, ...project.mechanisms, ...project.unknowns, ...(project.analyses ?? [])].map(item => item.id);
   if (new Set(allIds).size !== allIds.length) throw new Error('Identities must be unique across record types.');
   for (const claim of project.claims) {
     if (digest(buildClaim(project.book, claim)) !== digest(claim)) throw new Error('Stored claim is not canonical.');
@@ -56,6 +58,10 @@ export function validateProject(project) {
     if (authority !== 'analyst-inference') throw new Error('Scene authority must remain analyst-inference.');
     validateRecord('record_scene', record);
     scene.passage_ids.forEach(id => getPassage(project.book, id));
+    for (const span of scene.source_spans ?? []) {
+      validateCitation(project.book, span);
+      if (!scene.passage_ids.includes(span.passage_id)) throw new Error('Scene source span must refer to a declared scene passage.');
+    }
     scene.depends_on.forEach(id => requireRecord(project, 'scenes', id));
   }
   const visiting = new Set();
@@ -99,7 +105,7 @@ export function requireRecord(project, collection, id) {
 }
 export function addRecord(project, collection, record) {
   checkId(record.id);
-  if (['claims', 'scenes', 'mechanisms', 'unknowns'].some(key => project[key].some(item => item.id === record.id))) throw new Error(`Duplicate record ID: ${record.id}`);
+  if (['claims', 'scenes', 'mechanisms', 'unknowns', 'analyses'].some(key => (project[key] ?? []).some(item => item.id === record.id))) throw new Error(`Duplicate record ID: ${record.id}`);
   project[collection].push(record);
   return record;
 }
@@ -113,6 +119,17 @@ function seal(project, operation) {
 
 export class ProjectStore {
   constructor(home) { this.home = resolve(home); }
+  async list(offset = 0, limit = 20) {
+    let files;
+    try { files = (await readdir(this.home)).filter(file => /^book_[a-f0-9]{64}\.json$/.test(file)).sort(); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; files = []; }
+    const items = [];
+    for (const file of files.slice(offset, offset + limit)) {
+      const project = await this.load(file.slice(0, -5));
+      items.push({ book_id: project.book.id, title: project.book.title, source_sha256: project.book.source_sha256, passage_count: project.book.passages.length });
+    }
+    return { items, total: files.length, next_offset: offset + items.length < files.length ? offset + items.length : null };
+  }
   path(id) {
     if (typeof id !== 'string' || !/^book_[a-f0-9]{64}$/.test(id)) throw new Error('Invalid book ID.');
     return join(this.home, `${id}.json`);
