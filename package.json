@@ -1,6 +1,6 @@
 {
   "name": "rea-narrative",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evidence-centered reverse engineering of books and novels with local CLI and MCP tools.",
   "license": "MIT",
   "type": "module",
@@ -32,7 +32,7 @@
     "test": "node --test narrative/*.test.mjs",
     "start": "node narrative/cli.mjs",
     "mcp": "node narrative/cli.mjs mcp",
-    "check": "node --check narrative/core.mjs && node --check narrative/contracts.mjs && node --check narrative/store.mjs && node --check narrative/tools.mjs && node --check narrative/mcp.mjs && node --check narrative/cli.mjs && node --check narrative/research.mjs && node --check narrative/continuity.mjs && node --check narrative/workspace-contracts.mjs && node --check narrative/workspace.mjs && node --check narrative/design-review.mjs && node --check narrative/source-identity.mjs && node --check narrative/text-output.mjs && node --check narrative/output-providers.mjs && node --check narrative/output-contracts.mjs && node --check narrative/output-tools.mjs",
+    "check": "node --check narrative/core.mjs && node --check narrative/contracts.mjs && node --check narrative/store.mjs && node --check narrative/tools.mjs && node --check narrative/mcp.mjs && node --check narrative/cli.mjs && node --check narrative/research.mjs && node --check narrative/continuity.mjs && node --check narrative/workspace-contracts.mjs && node --check narrative/workspace.mjs && node --check narrative/design-review.mjs && node --check narrative/source-identity.mjs && node --check narrative/text-output.mjs && node --check narrative/output-providers.mjs && node --check narrative/output-contracts.mjs && node --check narrative/output-tools.mjs && node --check narrative/model-runtime.mjs && node --check narrative/engine-extraction.mjs && node --check narrative/engine-generation.mjs && node --check narrative/engine-guards.mjs && node --check narrative/execution.mjs",
     "demo": "node narrative/demo.mjs",
     "demo:multi": "node narrative/multi-demo.mjs"
   },
