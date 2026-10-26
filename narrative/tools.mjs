@@ -7,8 +7,10 @@ import { researchDefinitions, handleResearch } from './research.mjs';
 import { workspaceDefinitions } from './workspace-contracts.mjs';
 import { createWorkspaceTools } from './workspace.mjs';
 import { outputDefinitions, handleOutput } from './output-tools.mjs';
+import {executionDefinitions,createExecutionTools} from './execution.mjs';
 export { validateArguments } from './contracts.mjs';
-export const toolDefinitions = [...bookDefinitions, ...researchDefinitions, ...workspaceDefinitions, ...outputDefinitions];
+export const toolDefinitions = [...bookDefinitions, ...researchDefinitions, ...workspaceDefinitions, ...outputDefinitions, ...executionDefinitions];
+const executionNames=new Set(executionDefinitions.map(item=>item.name));
 const outputNames = new Set(outputDefinitions.map(item => item.name));
 const researchNames = new Set(researchDefinitions.map(item => item.name));
 const workspaceNames = new Set(workspaceDefinitions.map(item => item.name));
@@ -39,10 +41,12 @@ function graph(project, seed, direction) {
 export function createTools(home) {
   const store = new ProjectStore(home);
   const workspaces = createWorkspaceTools(home, store);
+  const execution=createExecutionTools(home,store);
   return { definitions: toolDefinitions, async call(name, args = {}) {
     const definition = toolDefinitions.find(tool => tool.name === name);
     if (!definition) throw new Error(`Unknown tool: ${name}`);
     validateArguments(args, definition.inputSchema);
+    if(executionNames.has(name))return execution.call(name,args);
     if (outputNames.has(name)) return handleOutput(name, args);
     if (researchNames.has(name)) return handleResearch(name, args, store);
     if (workspaceNames.has(name)) return workspaces.call(name, args);

@@ -1,6 +1,6 @@
 # دليل REA للروايات / Narrative REA guide
 
-REA يحفظ تحقيقًا قابلًا للمراجعة في بناء رواية: النص المستورد، مواضع الاستشهاد، المشاهد التي يحددها المحلل، الادعاءات، فرضيات الآليات، والأسئلة المفتوحة. المساعد المتصل يقرأ ويفكر ويقترح؛ الأدوات تتحقق من المدخلات وتحفظها. لا يوجد نموذج لغوي داخل البرنامج، ولا يولّد رواية تلقائيًا.
+REA يحفظ تحقيقًا قابلًا للمراجعة في بناء رواية: النص المستورد، مواضع الاستشهاد، المشاهد التي يحددها المحلل، الادعاءات، فرضيات الآليات، والأسئلة المفتوحة. في مسار التحقيق يقرأ المساعد المتصل ويفسر وتتحقق الأدوات وتحفظ. يضيف مسار 0.3 محركًا تجريبيًا يستدعي Ollama المحلي ليحلل عينات ويولد مرشح فصل؛ الأوزان ليست مرفقة، ولا يثبت التوليد صلاحية أدبية أو اعتمادًا من المؤلف.
 
 الهدف هو بناء تفسير محدد قابل للاختبار، ثم تجربة مبادئ مجردة في عمل أصلي إذا طلب المؤلف ذلك. لا يعني «الهندسة العكسية» استعادة نية الكاتب أو تاريخ مسوداته. وقد تفسر نماذج مختلفة النص نفسه. لا يضمن التحقيق جودة أدبية مماثلة، ولا يبرر محاكاة صوت كاتب حي.
 
@@ -238,7 +238,61 @@ rea-narrative call inspect_book --input "D:/Private/inspect.json" --home "D:/Pri
 
 ملفات 0.1 القديمة قابلة للقراءة في 0.2. لكن ملفات التحقيق الجديدة التي تستخدم `analyses` أو `source_spans` غير قابلة للفتح في 0.1.x. لا تخفض إصدار البرنامج الذي يستخدم مجلد بياناتك الخاص. المراجعة تتحقق من مخطط replacement قبل حساب بصمته، فتظهر أخطاء الحقول بوصفها أخطاء مخطط، ولا يبرر ذلك تعديل ملف التخزين يدويًا.
 
-## إنهاء المخرجات الجديدة
+
+
+
+## تنفيذ تجربة فصل محليًا في 0.3
+
+الأداتان `execute_narrative_experiment` و`inspect_narrative_run` ترفعان العدد الأصلي إلى **43**. الأولى تنفذ سلسلة نموذجية داخل البرنامج، والثانية تقرأ بيان التشغيل وتطابق بصمة المرشح إن وجد. هذا مختلف عن أدوات حفظ تحقيقات يكتبها المساعد المتصل: البرنامج نفسه يختار العينة ويطلب التخطيط والنثر من النموذج. لا يوجد حقل لمسودة بديلة كتبها المساعد المضيف، ولا يملأ المضيف مرحلة فاشلة بنثر منه.
+
+يلزم Node.js 24+ وخدمة Ollama محلية عند `127.0.0.1:11434` مع `gemma3:4b` افتراضيًا، أو نموذج محلي آخر يحدده المشغل. لا أوزان مرفقة ولا مفتاح API؛ لا ينزل npm النموذج ولا يتصل المحرك بخدمة كتابة سحابية. هذا المسار يستخدم Node مباشرة، ولا يحتاج Python أو Reweave أو نموذج embedding؛ تلك مزودات مخرجات اختيارية منفصلة.
+
+### طلب قابل للتكرار
+
+استورد مصدرًا مأذونًا باستخدامه أولًا واحتفظ بهويته الحقيقية. احفظ مثلًا `experiment.json` بترميز UTF-8؛ `BOOK_ID` والمسارات أدناه أمثلة تستبدلها، وليست بيانات اختبار منشورة:
+
+```json
+{
+  "book_id":"BOOK_ID",
+  "target_path":"D:/Private/example-chapter.md",
+  "output_directory":"D:/Private/runs/new-experiment",
+  "focuses":["combat","tracking","character"],
+  "model":"gemma3:4b",
+  "max_windows":9,
+  "constraints":["Preserve the established outcome and narrator viewpoint."],
+  "context_paths":["D:/Private/example-continuity.txt"],
+  "preserve_names":["ExampleName"],
+  "must_keep":["An exact author-specified phrase already in the target."]
+}
+```
+
+```powershell
+rea-narrative call execute_narrative_experiment --input D:/Private/experiment.json --home D:/Private/investigations
+rea-narrative call inspect_narrative_run '{"run_directory":"D:/Private/runs/new-experiment"}'
+```
+
+يمكن استخدام ملف arguments بدل JSON المضمّن عند اختلاف اقتباس الطرفية. الحقول المطلوبة هي `book_id`, `target_path`, `output_directory`, `focuses`. يجب ألا يكون مجلد الناتج موجودًا؛ لا يعاد استخدام مجلد تشغيل فاشل. المدخل المستهدف UTF-8 TXT/Markdown بحد 64 KiB. `context_paths` حتى خمسة ملفات، كل واحد منها بحد 16 KiB **ومجموع نصوصها الموصولة أيضًا بحد 16 KiB**. يدعم `focuses` قيم `combat`, `surveillance`, `tracking`, `character`, `plot`, `worldbuilding`, `character-development`, `characterisation` دون تكرار. `max_windows` بين 2 و18، وافتراضيه 9. حتى 50 constraint، كل منها حتى 2000 محرف؛ وحتى 100 اسم محفوظ بطول 100، و100 عبارة must_keep بطول 1000. راجع المخطط الفعلي قبل إرسال الطلب.
+
+### ما ينفذه البرنامج وما يثبته
+
+1. يختار نوافذ من الثلث المبكر والوسط والمتأخر، مرتبة بمفردات إنجليزية مرتبطة بالمجال. البحث الميكانيكي عبر النص لا يعني أن النموذج قرأه كاملًا؛ قد تفوّت المفردات مشاهد مهمة وإشارات عربية. يعرض coverage حدود العينات وأسبابها.
+2. يرسل مقاطع مصدرية مع معرّفات استشهاد قانونية إلى النموذج باستخدام JSON Schema. يختار النموذج المعرّفات بدل اختراع الاقتباسات، ثم يعيد البرنامج الاستشهاد من النص الأصلي. التطابق الحرفي لا يثبت صحة الآلية.
+3. يستخرج `transfer_rule` محمولة منفصلة عن وصف مشهد المصدر. تُرفض أسماء المصدر المعلنة أو العبارات المصدرية المتطابقة من ست كلمات داخلها. يرسل الكاتب في المسار الجديد `{id,focus,transfer_rule}` فقط، لا ظروف المشهد أو أحداثه أو اقتباساته. ذلك يقلل التلوث بالمصدر ولا يثبت أن القاعدة مجردة بما يكفي أو قابلة للنقل.
+4. يقسم الفصل المستهدف إلى مقاطع مرتبة، ويرسل الفصل كله إلى **مرحلة الخطة فقط** مع manifest لكل مقطع ومواضعه وكلماته الأولى والأخيرة. تتطلب الخطة beat واحدًا لكل معرّف مقطع، بلا حذف أو تكرار أو إعادة ترتيب. الكاتب يتلقى المقطع الحالي وخطته المحلية والاستراتيجية والقيود وذيل النثر السابق، لا الفصل الكامل في كل مرة. يطلب نثرًا أصليًا بضمير المتكلم والحاضر وفي لغة الهدف، ولا يثبت الفحص البنيوي اكتمال الالتزام بهذا الطلب.
+5. يرفض الفراغ والأغلفة والترجمة المهيمنة والخروج عن نسبة كلمات 0.65..1.6، ويرفض النثر غير المتغير بعد تجاهل العناوين والترقيم والفراغات. يعيد المحاولة مرتين كحد أقصى بعد الطلب الأول، ثم يفشل دون أن يكتب المضيف إصلاحًا بديلًا.
+6. يطبق الأسماء والعبارات المحمية حين تظهر في **متن المقطع الأصلي الحالي** فقط، مستبعدًا عناوين Markdown؛ لا يفرض اسمًا ظهر في عنوان الفصل أو مقطع آخر. يطابق أسماء المصدر بحدود كلمات Unicode حتى لا يعد مقطعًا داخل كلمة اسمًا مستعارًا. هذه حواجز لفظية محددة، لا حفظ كامل لقانون الرواية أو علاقاتها.
+7. يقارن كل مرشح بالمصدر الكامل ميكانيكيًا: يرفض تتابعات جديدة من ثماني كلمات مطابقة للمصدر وغير موجودة مسبقًا في الهدف، ويعرض تطابقات خمس كلمات للمراجعة. قد تعترض لغة عادية، ولا يثبت غياب التطابق الأصالة. يرفض تكرار الفقرة الطويلة الجديدة داخل المقاطع وعبرها: الفقرات من 18 كلمة فأكثر لا تتجاوز حدها في الهدف الأصلي أو مرة واحدة، أيهما أكبر؛ لا يمنع اللازمة القصيرة أو التكرار الأصلي المقصود.
+8. يتأكد أن المقاطع المنشورة تتكون من ردود نثرية مسجلة في مرحلة التوليد، ثم ينفذ تنظيف Unicode المحدود. يعيد قراءة الهدف والسياق ومصدر التحقيق قبل النشر؛ إذا تغير أحدها يفشل بدل نشر المرشح. لا يعدل المخطوطة أو المصدر.
+
+### قراءة التشغيل ومراجعة المرشح
+
+المجلد الخاص يحتفظ بـ`manifest.json` ونسخة الهدف الأصلية وبطاقات الآليات والخطة والمقاطع، و`events.jsonl` والطلبات والردود الخام تحت `model-requests/`. البيان يسجل هويات المدخلات وبصماتها وبصمات ملفات المحرك، ومراحل الطلبات وردودها والتغطية. هذه قابلية تتبع وليست توقيع جهة مستقلة أو ضمان معنى. الملفات تحتوي نصوصًا خاصة؛ لا تنشرها أو ترسلها إلى مراجع خارجي دون تفويض.
+
+عند الاكتمال البنيوي ينتج `draft.experimental.md` وحالة `candidate_for_review` و`requires_human_review:true`. هذا **مرشح للمراجعة، لا نجاح أدبي ولا نسخة معتمدة**. `inspect_narrative_run` يقرأ البيان ويعيد حساب بصمة المرشح؛ لا يعيد التوليد ولا يصدق جودة النثر أو صحة كل تفسير أو سلامة جميع ملفات السجل بصورة مستقلة. عند الفشل يحتفظ التشغيل بما أمكن حفظه من البيان والسجلات؛ راجع `stage_failed` والخطأ ولا تتعامل مع ملف وسيط كفصل مكتمل.
+
+التجربة المحلية الأولى على فصل حقيقي أخفقت في المراجعة الأدبية بسبب حلقات تكرار ومشكلات استمرارية. المقارنة المستقلة كانت جزئية أيضًا على مخطوطة حقيقية. استُخدمت مفاهيم حواجز أثبتت فائدة محددة في المقارنة، لكن ذلك ليس تصديقًا على المحرك النهائي. التجربة المركبة اللاحقة لم تُعلن ناجحة؛ لا تكتب أن Run04 اجتاز التقييم. المحرك المستقل للمقارنة خارج الحزمة حاليًا ولا يوجد له أمر CLI أصلي هنا. يجب أن يراجع المؤلف تسلسل الأحداث والدوافع والزمن والعلاقات والتكرار قبل أي تبنٍّ يدوي. لا يوجد تحقق من الجودة أو التكافؤ الدلالي أو الأصالة أو إزالة علامات إحصائية.
+
+## إنهاء النثر الجديد الموجه للقارئ
 
 ميزانية الانتظار الافتراضية لإعادة الصياغة هي `120000 * ceil(masked_utf8_bytes / 384)` مللي ثانية، بحد أدنى 120 ثانية وحد أقصى 1800000 مللي ثانية. للصورة وفحص القدرات 120 ثانية افتراضيًا. يمكن للمشغل ضبط `REA_OUTPUT_TIMEOUT_MS` كعدد صحيح بين 1000 و1800000؛ لا يضبطه نص المستخدم أو مدخل أداة الرواية. يعاد `timeout_ms` وتذكر رسالة انتهاء المهلة الميزانية الدقيقة. هذه مهلة قصوى وليست تقدير مدة أو وعد أداء. عند البحث التلقائي عن Python تُتجاوز أدلة WindowsApps، أما المسار المطلق الصريح فيتحقق من وجود ملفه.
 
@@ -286,7 +340,7 @@ $env:REA_LAMA_MODEL = 'D:/REA-output-models/big-lama.pt'
 
 ابدأ خدمة Ollama المحلية إذا لم تكن تعمل، ثم افحص `rea-narrative call output_capabilities '{}'`. الأوامر السابقة تثبت حزم المزود الاختياري؛ لا تستخدم pip --user، ولا تكتفِ بأن Python آخر ينجح في استيرادها. ثبت هذه المتغيرات في بيئة العميل الذي يشغل MCP أيضًا؛ تعيينها في نافذة PowerShell واحدة لا يغير عملية تطبيق مفتوحة من قبل. رابط [مصدر Reweave المثبت](https://github.com/Shreyan1/ai-text-watermark-remover/tree/f96fa2afb8b257dcec8bac7eb2603a4d2f265463) يحدد النسخة، لكنه لا يجعل الاختبارات اللفظية ضمانًا للعربية. حزم Torch والأوزان خارج حزمة Node وليست جزءًا من ادعاء انعدام تبعيات npm.
 
-أدوات المخرجات الخمس ترفع العدد إلى 41: `output_capabilities` يفحص القدرات دون تثبيت، و`inspect_output_text` يعرض تدقيقًا دون نص معدل، و`finalize_output_text` يعيد `cleaned_text` وتقريرًا، و`rewrite_output_text` يطلب إعادة صياغة محلية اختيارية، و`restore_output_image` يكتب صورة جديدة. أدوات النص تأخذ `text` و`format` اختياريًا (`markdown` افتراضيًا أو `plain`) و`protected_ranges:[{start,end}]` اختياريًا. إعادة الصياغة تقبل `model` اختياريًا، والصورة تحتاج `input_path`, `mask_path`, `output_path`.
+أدوات المخرجات الخمس ضمن إجمالي 43 أداة مع التنفيذ التجريبي: `output_capabilities` يفحص القدرات دون تثبيت، و`inspect_output_text` يعرض تدقيقًا دون نص معدل، و`finalize_output_text` يعيد `cleaned_text` وتقريرًا، و`rewrite_output_text` يطلب إعادة صياغة محلية اختيارية، و`restore_output_image` يكتب صورة جديدة. أدوات النص تأخذ `text` و`format` اختياريًا (`markdown` افتراضيًا أو `plain`) و`protected_ranges:[{start,end}]` اختياريًا. إعادة الصياغة تقبل `model` اختياريًا، والصورة تحتاج `input_path`, `mask_path`, `output_path`.
 
 لإنهاء مسودة جديدة من ملف: `rea-narrative finalize "D:/Draft/new.md" --output "D:/Draft/final.md" --format markdown`. يكتب ملفًا جديدًا فقط ويرفض استبدال الموجود، ويطبع مسار الناتج والتقرير؛ لا يقبل `--home` ولا يشغل نموذجًا. لحماية اقتباسات داخلية غير مكتشفة تلقائيًا استخدم أداة النص مع protected_ranges بدل هذا الاختصار. إعادة الصياغة متاحة بالأداة، وليست خيارًا في أمر finalize.
 
@@ -304,13 +358,15 @@ LaMa اختياري للصور فقط: يحتاج أوزانًا محلية وق
 
 ## English operating summary
 
-Narrative REA is a local Node.js 24+ evidence store with CLI and stdio MCP tools. The connected assistant supplies all interpretation; the runtime contains no model. Import an explicitly selected UTF-8 TXT/Markdown source, inspect it, read in order with paging, and record exact citations before building interpretations. Paragraph segmentation and chapter labels are heuristics. Literal search cannot establish semantic absence.
+Experimental 0.3 executes local-model analysis and prose through `execute_narrative_experiment`, with `inspect_narrative_run` checking a saved candidate hash. It accepts book_id, original target_path, a new exclusive output_directory and focuses, plus optional model/max_windows/constraints/context_paths/preserve_names/must_keep. No host-written replacement is accepted. Targets are <=64 KiB and combined context <=16 KiB. Sampling is partial and English-lexical, not complete model reading. Only the plan sees the full target; exactly one indexed beat is required per actual fragment. Drafting uses portable transfer rules, local canon guards and overlap/duplication checks. Raw model responses and code/input hashes are retained privately. Completion publishes a new `candidate_for_review`, never a semantic or literary pass. Early real work exposed repetition and continuity failures; no later hybrid success is claimed, and no independent-comparison CLI is shipped. Human author adoption remains explicit and manual.
+
+Narrative REA is a local Node.js 24+ evidence store with CLI and stdio MCP tools. Core storage retains analyst interpretations; optional experimental execution calls local Ollama for model analysis and candidate prose, with no bundled weights. Import an explicitly selected UTF-8 TXT/Markdown source, inspect it, read in order with paging, and record exact citations before building interpretations. Paragraph segmentation and chapter labels are heuristics. Literal search cannot establish semantic absence.
 
 Citations use absolute, zero-based UTF-16 code-unit offsets into the decoded source, with an exclusive end. Copy exact source text, including whitespace; do not normalize it. Observation, inference and hypothesis are different claim kinds. Interpretations require alternatives and a proposed test. Scene boundaries, motivations and dependencies are analyst inferences. Mechanisms are hypotheses; graph reachability and citation integrity do not prove causality, author intent, reader response or literary quality.
 
 Use all tools through `rea-narrative call <tool> --input <file.json> --home <absolute-directory>`, or connect the config printed by `rea-narrative config --home <directory>`. `rea-narrative tools` is the authoritative input catalog. Tools are `import_book`, `inspect_book`, `list_passages`, `search_passages`, `read_passage`, `record_claim`, `record_scene`, `record_mechanism`, `record_unknown`, `resolve_unknown`, `trace_dependencies`, `verify_investigation`, `read_records`, `transfer_brief`, `export_investigation`, and `import_investigation`.
 
-Version 0.2 adds `get_analysis_guide`, `record_analysis`, `read_source_range`, `search_source`, `list_books`; and `create_workspace`, `list_workspaces`, `inspect_workspace`, `add_workspace_source`, `record_synthesis`, `cast_character`, `set_story_state`, `record_story_event`, `revise_workspace_record`, `read_workspace_records`, `read_workspace_source`, `verify_workspace`, `workspace_brief`, `export_workspace`, `import_workspace`. There are 41 tools in total. Four analysis focuses retain source-backed findings as analyst interpretations. Range access supports giant paragraphs without changing segmentation or original offsets.
+Version 0.2 adds `get_analysis_guide`, `record_analysis`, `read_source_range`, `search_source`, `list_books`; and `create_workspace`, `list_workspaces`, `inspect_workspace`, `add_workspace_source`, `record_synthesis`, `cast_character`, `set_story_state`, `record_story_event`, `revise_workspace_record`, `read_workspace_records`, `read_workspace_source`, `verify_workspace`, `workspace_brief`, `export_workspace`, `import_workspace`. With execute_narrative_experiment and inspect_narrative_run there are 43 native tools in total. Four analysis focuses retain source-backed findings as analyst interpretations. Range access supports giant paragraphs without changing segmentation or original offsets.
 
 Workspaces embed frozen validated investigations. Source references are qualified by book/kind/id. Synthesis needs contributions from two distinct books, compatibility review, explicit open/resolved conflicts, design and test. Cast sources must be character analyses; crossover preserves origins, while original-inspired requires a new name and adaptations without proving originality. Events check declared string preconditions/effects against initial state and causal dependency ancestors only. Knowledge is not inferred automatically. Revisions replace complete record inputs with expected_revision, preserve prior versions, and cannot change record identity or a cast member's source. Verification covers declared consistency only. Workspace exports contain full source texts and consume the same 16 MiB total storage limit; transfer privately.
 

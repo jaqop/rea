@@ -2,6 +2,8 @@
 
 نسخة مستقلة من [REA](https://github.com/morluto/rea)، مخصصة للتحقيق في بناء الكتب والروايات بالأدلة. تمنح مساعدك أدوات لحفظ النص والاستشهادات والمشاهد والقرارات والآليات السردية والأسئلة المفتوحة وتتبع العلاقات بينها.
 
+تضيف 0.3 محرك تنفيذ محليًا **تجريبيًا** إلى مخزن الأدلة: يختار عينات مصدرية، ويطلب من Ollama استخراج قواعد نقل مجردة، ثم تخطيط فصل وكتابة مرشح جديد بمراجعات بنيوية وسجل طلبات وردود. توجد 43 أداة أصلية. لا تعني هذه القدرة وجود محرر أدبي مستقل موثوق؛ التجربة الأولى على فصل حقيقي أخفقت في المراجعة الأدبية بسبب التكرار ومشكلات الاستمرارية، ولا توجد نتيجة نجاح معلنة للتجربة التالية.
+
 هذه النسخة تعمل للكتب. نقطة التشغيل وحزمة التثبيت والاختبارات مخصصة للمسار السردي. المصدر البرمجي الأصلي محفوظ للرجوع إليه، ولا يُحمّل أو يُوزّع مع الحزمة الجديدة.
 
 اسم الأمر هو `rea-narrative` لتجنب التعارض مع الأمر `rea` الذي تستخدمه حزمة تحليل البرامج الأصلية. يمكن تثبيت النسختين معًا دون حذف إحداهما أو استخدام `--force`.
@@ -48,7 +50,7 @@
 
 ## الإمكانات
 
-في مسار 0.2 توجد 41 أداة مشتركة بين CLI وMCP: تحقيق مصدر واحد، وأدلة تحليل متخصصة، ومساحة تصميم تجمع مصادر متعددة وتحتفظ بمراجعات الخطة.
+في المسار الحالي توجد 43 أداة مشتركة بين CLI وMCP: تحقيق مصدر واحد، وأدلة تحليل متخصصة، ومساحة تصميم تجمع مصادر متعددة وتحتفظ بمراجعات الخطة.
 
 - استيراد TXT وMarkdown بترميز UTF-8، مع حفظ النص ومواضع المقاطع وبصمة المصدر؛ يدعم العربية والإنجليزية.
 - البحث الحرفي والقراءة المرتبة على صفحات، والتحقق من تطابق الاقتباس وموضعه.
@@ -66,7 +68,18 @@
 
 ابدأ بتحقيق كل كتاب وتسجيل تحليلاته، ثم `create_workspace` و`record_synthesis` و`cast_character` و`set_story_state` و`record_story_event`. راجع `verify_workspace`، وأصلح السجل عبر `revise_workspace_record`، واستخرج `workspace_brief`. يعرض [الدليل](docs/narrative-guide.md) الحقول ومثالًا متصلًا؛ الأوامر لا تؤلف الرواية تلقائيًا. يمكن للمؤلف طلب كتابة أصلية من المساعد المتصل بعد مراجعة التصميم.
 
-## الحدود
+
+
+
+## تجربة فصل محلية في 0.3
+
+`execute_narrative_experiment` يشغل نموذجًا محليًا، ولا يقبل فصلًا بديلًا كتبه المساعد المضيف. `inspect_narrative_run` يفحص بيان التشغيل وبصمة المرشح إن وجد. تحتاج خدمة Ollama عند 127.0.0.1:11434 ونموذج `gemma3:4b` المثبت صراحة؛ لا مفتاح API ولا أوزان مرفقة، ولا يلزم Python لهذا المحرك. مسار Reweave/LaMa الاختياري منفصل.
+
+احفظ طلب JSON بمواضع اصطناعية تستبدلها بملفاتك: `book_id` للتحقيق المستورد، و`target_path` لفصل UTF-8، و`output_directory` لمجلد **غير موجود**، و`focuses` مثل `["combat","tracking"]`. ثم `rea-narrative call execute_narrative_experiment --input experiment.json --home D:/Private/investigations`. التفاصيل والحقول الاختيارية في [دليل التنفيذ](docs/narrative-guide.md).
+
+النتيجة `candidate_for_review` مرشح للمراجعة وليست نجاحًا أدبيًا أو تعديلًا معتمدًا. لا تُستبدل المخطوطة، وتبقى عينات المصدر وتسجيلات النموذج والمرشح داخل مجلد خاص. لا ترفعها إلى GitHub. الحواجز المقتبسة من مقارنة مستقلة تحسن رفض بعض الأخطاء لكنها لا تثبت المعنى أو الاستمرارية أو الأصالة؛ نموذج المقارنة المستقل نفسه ليس أمرًا موزعًا مع الحزمة.
+
+## حدود التشغيل
 
 مهلة إعادة الصياغة الافتراضية تتدرج بمقدار 120 ثانية لكل 384 بايت من المدخل المحمي إلى حد 30 دقيقة؛ يمكن ضبط `REA_OUTPUT_TIMEOUT_MS` بين 1000 و1800000 مللي ثانية. تعرض النتيجة الميزانية الفعلية. تخطي WindowsApps في البحث التلقائي عن Python لا يغني عن اختيار بيئة افتراضية صريحة. تمرير نص محمي فقط يعاد دون نموذج بوسم `protected_text_unchanged`، وليس شهادة إعادة صياغة أو معنى. انزياح زمني عربي لوحظ في تجربة نموذجية رغم نجاح البوابات؛ الحارس اللفظي الإضافي جزئي ولا يثبت الاستلزام الدلالي أو إزالة علامة إحصائية.
 
@@ -80,7 +93,7 @@
 
 تقرأ 0.2 ملفات 0.1 القديمة، لكن ملفات 0.2 التي تستخدم التحليلات أو `source_spans` لا تفتح في 0.1.x؛ لا ترجع مجلد بياناتك الخاص إلى نسخة أقدم. وقد ترفض المدققات الأشد في النسخة الحالية لقطات 0.2 تجريبية غير منشورة؛ احتفظ بنسخ احتياطية قبل النقل.
 
-المساعد المتصل هو الذي يقرأ ويفسر ويكتب إذا طلبت ذلك. هذه الحزمة لا تحتوي نموذج لغة ولا تولّد رواية بمفردها. صحة الاقتباس لا تثبت صحة تفسيره؛ الآليات تظل فرضيات غير مختبرة، ولا توجد تجربة قراء أو شهادة جودة أدبية مدمجة.
+في مسار التحقيق اليدوي يقرأ المساعد المتصل ويفسر ويكتب إذا طلبت ذلك. الحزمة لا تتضمن أوزان نموذج؛ مسار التنفيذ التجريبي يطلب نثرًا من Ollama، ولا يشكل محررًا مستقلًا موثوقًا. صحة الاقتباس لا تثبت صحة تفسيره؛ الآليات تظل فرضيات غير مختبرة، ولا توجد تجربة قراء أو شهادة جودة أدبية مدمجة.
 
 لا يوجد استيراد EPUB أو PDF أو DOCX أو OCR حاليًا. التحويل إلى نص يتم خارج المشروع مع مراجعة ترتيب النص. الحد لكل ملف أو تحقيق محفوظ هو 16 MiB؛ التحقيق يحتفظ بالنص ومقاطعه وأدلته، ولذلك قد تحتاج الكتب الطويلة إلى تقسيم. عناوين الفصول وتقسيم الفقرات تقريبيان، ولا يثبتان حدود المشاهد.
 
@@ -90,8 +103,10 @@
 
 ## English
 
+Experimental 0.3 adds two native execution tools for fixed-local Ollama sampling, mechanism extraction, fragment-specific planning and model-written chapter candidates. No weights or API keys are bundled. Candidates and raw logs are private, and source/target files are never overwritten. Early real-chapter evaluation failed literary review; the next hybrid run has no declared pass. `candidate_for_review` requires author review and is not proof of semantics, quality, originality or reliable autonomous editing.
+
 REA Narrative is a dependency-free Node.js 24+ CLI and stdio MCP server for evidence-centered investigation of novels. Your assistant supplies interpretation; the runtime preserves source identity, checks exact citations, stores narrative records, traces declared dependencies and exports portable investigations. It does not recover authorial intent or guarantee literary quality.
 
-Version 0.2 adds four analysis focuses, exact source-range access, and portable multi-book design workspaces. Frozen source snapshots support qualified references, two-book synthesis proposals, explicit crossover or original-inspired casting, declared causal-state checks and retained CAS revisions. The 41 tools do not validate unstated psychology or semantic compatibility. Workspace exports include full source texts; transfer them privately, separately from code.
+Version 0.2 adds four analysis focuses, exact source-range access, and portable multi-book design workspaces. Frozen source snapshots support qualified references, two-book synthesis proposals, explicit crossover or original-inspired casting, declared causal-state checks and retained CAS revisions. The 43 tools do not validate unstated psychology or semantic compatibility. Workspace exports include full source texts; transfer them privately, separately from code.
 
 MIT. Original REA attribution is retained. Upstream package metadata, README and contributor guidance are archived under docs/upstream/. Historical software source is not covered by narrative tests. Do not merge upstream package or publishing configuration blindly into this fork.
